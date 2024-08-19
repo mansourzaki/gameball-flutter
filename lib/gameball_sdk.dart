@@ -1,5 +1,8 @@
 library gameball_sdk;
 
+import 'dart:io';
+
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +13,9 @@ import 'models/requests/player_register_request.dart';
 import 'network/models/callbacks.dart';
 import 'network/request_calls/create_player_request.dart';
 import 'network/request_calls/send_event_request.dart';
+
+import 'network/utils/constants.dart';
+import 'network/utils/header_generator.dart';
 
 class GameballApp extends StatelessWidget {
   static GameballApp? _instance;
@@ -22,6 +28,8 @@ class GameballApp extends StatelessWidget {
   static String? _playerEmail;
   static String? _playerMobile;
   static String? _referralCode;
+  static String? _openDetail;
+  static bool? _hideNavigation;
 
   /// Retrieves the singleton instance of the GameballApp class.
   ///
@@ -179,16 +187,107 @@ class GameballApp extends StatelessWidget {
     }
   }
 
-  void _openBottomSheet() {
-
+  /// Displays the Gameball profile in a bottom sheet.
+  ///
+  /// This method initiates the process of showing the Gameball profile within a bottom sheet.
+  ///
+  /// Arguments:
+  ///   - `context`: The build context for creating the bottom sheet.
+  ///   - `playerUniqueId`: The unique ID of the player.
+  ///   - `openDetail`: An optional URL to open within the profile.
+  ///   - `hideNavigation`: An optional flag to indicate if the navigation bar should be hidden.
+  void showProfile(BuildContext context, String playerUniqueId, String? openDetail, bool? hideNavigation) {
+    _playerUniqueId = playerUniqueId;
+    _openDetail = openDetail;
+    _hideNavigation = hideNavigation;
+    _openBottomSheet(context);
   }
 
-  void openGameballView() {
-
+  /// Opens a bottom sheet to display the Gameball profile.
+  ///
+  /// Creates a bottom sheet with a WebView displaying the Gameball profile based on the provided parameters.
+  ///
+  /// Arguments:
+  ///   - `context`: The build context for creating the bottom sheet.
+  void _openBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      isDismissible: true,
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+            top: Radius.circular(20.0)), // Set the top border radius
+      ),
+      builder: (BuildContext context) {
+        return SizedBox(
+          height: MediaQuery.of(context).size.height * 0.93,
+          // Adjust the height as desired (e.g., 95% of the screen height)
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20.0)), // Set the top border radius
+                child: WebView(
+                  initialUrl: _buildWidgetUrl(),
+                  javascriptMode: JavascriptMode.unrestricted,
+                ),
+              ),
+              Positioned(
+                top: 10.0,
+                left: _lang == 'ar' ? 10.0 : null,
+                right: _lang == 'en' ? 10.0 : null,
+                child: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
+  /// Builds the URL for the Gameball profile widget.
+  ///
+  /// Constructs the URL based on the provided parameters and returns it.
+  String _buildWidgetUrl(){
+    String widgetUrl = widgetBaseUrl;
+
+    widgetUrl += '&playerid=$_playerUniqueId';
+
+    widgetUrl += '&lang=${_lang ?? 'en'}';
+
+    widgetUrl += '&apiKey=$_apiKey';
+
+    widgetUrl += '&platform=${_platform ?? ''}';
+
+    widgetUrl += '&shop=${_shop ?? ''}';
+
+    widgetUrl += '&os=${getDevicePlatform()}';
+
+    widgetUrl += '&sdk=Flutter/${getPckageInfo()?.version}';
+
+    widgetUrl += '&openDetail=${_openDetail ?? ''}';
+
+    widgetUrl += '&hideNavigation=${_hideNavigation ?? ''}';
+
+    return widgetUrl;
+  }
+
+  /// Determines the device platform.
+  ///
+  /// Returns the device platform as a string (iOS, Android, or Unknown).
   String getDevicePlatform() {
-
+    if (Platform.isIOS) {
+      return 'iOS';
+    } else if (Platform.isAndroid) {
+      return 'Android';
+    } else {
+      return 'Unknown';
+    }
   }
 
   @override
