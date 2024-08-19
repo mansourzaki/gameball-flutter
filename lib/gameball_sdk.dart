@@ -4,10 +4,12 @@ import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
+import 'models/requests/event.dart';
 import 'models/requests/player_attributes.dart';
 import 'models/requests/player_register_request.dart';
 import 'network/models/callbacks.dart';
 import 'network/request_calls/create_player_request.dart';
+import 'network/request_calls/send_event_request.dart';
 
 class GameballApp extends StatelessWidget {
   static GameballApp? _instance;
@@ -155,8 +157,26 @@ class GameballApp extends StatelessWidget {
     }
   }
 
-  void sendEvent() {
-
+  /// Sends an event to Gameball.
+  ///
+  /// This method constructs an event request and sends it to the Gameball API.
+  /// The callback is invoked with a success/failure indicator and any encountered error.
+  ///
+  /// Arguments:
+  ///   - `eventBody`: The event data to be sent.
+  ///   - `callback`: The callback function to handle the event sending result.s
+  void sendEvent(Event eventBody, SendEventCallback? callback) {
+    try {
+      sendEventRequest(eventBody, _apiKey).then((response) {
+        if (response != null && response.statusCode == 200) {
+          callback!(true, null);
+        } else {
+          callback!(false, null);
+        }
+      });
+    } catch (e) {
+      callback!(null, e as Exception);
+    }
   }
 
   void _openBottomSheet() {
