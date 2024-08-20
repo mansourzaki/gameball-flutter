@@ -1,4 +1,3 @@
-
 import '../../models/responses/player_register_response.dart';
 
 /// Callback function type for player registration responses.

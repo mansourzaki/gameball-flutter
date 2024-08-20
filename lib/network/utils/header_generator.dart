@@ -15,7 +15,7 @@ Map<String, String> getRequestHeaders(String apiKey) {
     'Content-Type': 'application/json; charset=UTF-8',
     'ApiKey': apiKey,
     'x-gb-agent':
-    'Flutter/${getPckageInfo()?.version}/${Platform.I.operatingSystem}/${Platform.I.version}'
+        'Flutter/${getPckageInfo()?.version}/${Platform.I.operatingSystem}/${Platform.I.version}'
   };
 }
 

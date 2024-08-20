@@ -5,7 +5,6 @@ import '../utils/constants.dart';
 import '../utils/header_generator.dart';
 import 'package:http/http.dart' as http;
 
-
 /// Sends an event request to the Gameball API asynchronously.
 ///
 /// This function constructs the request URL, sets headers, encodes the event body,

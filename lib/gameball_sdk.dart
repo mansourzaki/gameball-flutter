@@ -1,7 +1,6 @@
 library gameball_sdk;
 
-import 'dart:io';
-
+import 'package:gameball_sdk/utils/platform_utils.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -275,19 +274,6 @@ class GameballApp extends StatelessWidget {
     widgetUrl += '&hideNavigation=${_hideNavigation ?? ''}';
 
     return widgetUrl;
-  }
-
-  /// Determines the device platform.
-  ///
-  /// Returns the device platform as a string (iOS, Android, or Unknown).
-  String getDevicePlatform() {
-    if (Platform.isIOS) {
-      return 'iOS';
-    } else if (Platform.isAndroid) {
-      return 'Android';
-    } else {
-      return 'Unknown';
-    }
   }
 
   @override
