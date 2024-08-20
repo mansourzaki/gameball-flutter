@@ -1,3 +1,7 @@
-## 0.0.1
+## 1.0.0
 
-* TODO: Describe initial release.
+* First release of the Gameball FLutter SDK
+* Supports Player Registration
+* Supports Players Referrals
+* Supports Sending Events
+* Supports Showing Player Profile (Gameball Widget)
