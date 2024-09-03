@@ -22,19 +22,19 @@ import 'package:http/http.dart' as http;
 ///
 /// Throws:
 ///   An `Exception` with an error message if the request fails.
-Future<http.Response> sendEventRequest(Event requestBody, String apiKey) async {
+Future<http.Response> sendEventRequest(
+    Event requestBody, String apiKey, String lang) async {
   const url = '$baseUrl$eventEndpoint';
 
   final response = await http.post(
     Uri.parse(url),
-    headers: getRequestHeaders(apiKey),
+    headers: getRequestHeaders(apiKey, lang),
     body: jsonEncode(requestBody),
   );
 
   // Check for successful response
+  // Send event returns an empty body
   if (response.statusCode == 200) {
-    // Parse the JSON response and return a PlayerRegisterResponse object
-    final jsonMap = jsonDecode(response.body) as Map<String, dynamic>;
     return response;
   } else {
     // Handle error based on status code or throw an exception
