@@ -1,5 +1,6 @@
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:platform_info/platform_info.dart';
+
+import '../../utils/gameball_utils.dart';
 
 /// Creates a map of request headers for API calls.
 ///
@@ -10,27 +11,12 @@ import 'package:platform_info/platform_info.dart';
 ///
 /// Returns:
 ///   A map of request headers.
-Map<String, String> getRequestHeaders(String apiKey) {
+Map<String, String> getRequestHeaders(String apiKey, String lang) {
   return <String, String>{
     'Content-Type': 'application/json; charset=UTF-8',
     'ApiKey': apiKey,
+    'Lang': lang,
     'x-gb-agent':
-        'Flutter/${getPckageInfo()?.version}/${Platform.I.operatingSystem}/${Platform.I.version}'
+        'Flutter/$getSdkVersion()/${Platform.I.operatingSystem}/${Platform.I.version}'
   };
-}
-
-/// Retrieves package information asynchronously.
-///
-/// Fetches package information from the platform and returns it as a `PackageInfo` object.
-///
-/// Returns:
-///   A `PackageInfo` object containing package details, or null if not available yet.
-PackageInfo? getPckageInfo() {
-  PackageInfo? packageInfo;
-
-  PackageInfo.fromPlatform().then((response) {
-    packageInfo = response;
-  });
-
-  return packageInfo;
 }

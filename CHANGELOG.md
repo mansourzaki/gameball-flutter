@@ -1,3 +1,11 @@
+## 1.0.1
+
+* Cleaned up unused imports, removed unnecessary code
+* Handled language usages between global and preferred language
+* Included language parameter in all requests headers
+* Refactored certain areas in the code (widget url construction)
+* Added support for RTL/LTR in widget close button
+
 ## 1.0.0
 
 * First release of the Gameball FLutter SDK

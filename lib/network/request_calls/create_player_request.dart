@@ -25,12 +25,12 @@ import 'package:http/http.dart' as http;
 /// Throws:
 ///   An `Exception` with an error message if the request fails.
 Future<PlayerRegisterResponse> createPlayerRequest(
-    PlayerRegisterRequest requestBody, String apiKey) async {
+    PlayerRegisterRequest requestBody, String apiKey, String lang) async {
   const url = '$baseUrl$playerEndpoint';
 
   final response = await http.post(
     Uri.parse(url),
-    headers: getRequestHeaders(apiKey),
+    headers: getRequestHeaders(apiKey, lang),
     body: jsonEncode(requestBody),
   );
 

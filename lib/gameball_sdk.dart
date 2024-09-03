@@ -1,5 +1,7 @@
 library gameball_sdk;
 
+import 'package:gameball_sdk/utils/gameball_utils.dart';
+import 'package:gameball_sdk/utils/language_utils.dart';
 import 'package:gameball_sdk/utils/platform_utils.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
@@ -14,16 +16,16 @@ import 'network/request_calls/create_player_request.dart';
 import 'network/request_calls/send_event_request.dart';
 
 import 'network/utils/constants.dart';
-import 'network/utils/header_generator.dart';
 
 class GameballApp extends StatelessWidget {
   static GameballApp? _instance;
   static String _apiKey = "";
   static String _playerUniqueId = "";
   static String _deviceToken = "";
-  static String? _lang;
+  static String _lang = "";
   static String? _platform;
   static String? _shop;
+  static String? _playerPreferredLanguage;
   static String? _playerEmail;
   static String? _playerMobile;
   static String? _referralCode;
@@ -41,7 +43,7 @@ class GameballApp extends StatelessWidget {
   /// Initializes the Gameball SDK with required parameters.
   ///
   /// Sets the API key, language, platform, and shop information for subsequent SDK operations.
-  void init(String apiKey, String lang, String platform, String shop) {
+  void init(String apiKey, String lang, String? platform, String? shop) {
     _lang = lang;
     _platform = platform;
     _shop = shop;
@@ -60,8 +62,6 @@ class GameballApp extends StatelessWidget {
     });
   }
 
-  _checkReferral() {}
-
   /// Handles incoming Firebase Dynamic Links containing potential referral codes.
   ///
   /// This method retrieves any pending dynamic link upon app launch and checks
@@ -73,7 +73,7 @@ class GameballApp extends StatelessWidget {
   /// for dynamic links to handle referrals throughout the app's lifecycle.
   Future<void> _handleDynamicLink(ReferralCodeCallback callback) async {
     final PendingDynamicLinkData? data =
-    await FirebaseDynamicLinks.instance.getInitialLink();
+        await FirebaseDynamicLinks.instance.getInitialLink();
 
     if (data != null) {
       final Uri deepLink = data.link;
@@ -95,12 +95,18 @@ class GameballApp extends StatelessWidget {
   ///   - `playerAttributes`: Additional player attributes.
   ///   - `responseCallback`: A callback function to handle the registration response.
   Future<void> registerPlayer(
-      String playerUniqueId,
-      String? playerEmail,
-      String? playerMobile,
-      PlayerAttributes playerAttributes,
-      RegisterCallback? responseCallback,
-      ) async {
+    String playerUniqueId,
+    String? playerEmail,
+    String? playerMobile,
+    PlayerAttributes? playerAttributes,
+    RegisterCallback? responseCallback,
+  ) async {
+    _playerUniqueId = playerUniqueId.trim();
+
+    if (isNullOrEmpty(_playerUniqueId) || isNullOrEmpty(_apiKey)) {
+      responseCallback!(null, null);
+      return;
+    }
 
     _initializeFirebase();
 
@@ -113,17 +119,20 @@ class GameballApp extends StatelessWidget {
     await _handleDynamicLink(referralCodeRegistrationCallback)
         .then((response) {});
 
-    _playerUniqueId = playerUniqueId.trim();
-
     final email = playerEmail?.trim();
     final mobile = playerMobile?.trim();
 
-    if (email != null && email.isNotEmpty) {
+    if (!isNullOrEmpty(email)) {
       _playerEmail = email;
     }
 
-    if (mobile != null && mobile.isNotEmpty) {
+    if (!isNullOrEmpty(mobile)) {
       _playerMobile = mobile;
+    }
+
+    if (playerAttributes?.preferredLanguage != null &&
+        playerAttributes?.preferredLanguage?.length == 2) {
+      _playerPreferredLanguage = playerAttributes?.preferredLanguage;
     }
 
     _registerDevice(playerAttributes, responseCallback);
@@ -139,10 +148,6 @@ class GameballApp extends StatelessWidget {
   ///   - `callback`: The callback function to handle the registration result.
   void _registerDevice(
       PlayerAttributes? playerAttributes, RegisterCallback? callback) {
-    if (_playerUniqueId == null || _apiKey == null) {
-      return;
-    }
-
     PlayerRegisterRequest playerRegisterRequest = PlayerRegisterRequest(
         playerUniqueID: _playerUniqueId,
         deviceToken: _deviceToken,
@@ -152,7 +157,9 @@ class GameballApp extends StatelessWidget {
         referrerCode: _referralCode);
 
     try {
-      createPlayerRequest(playerRegisterRequest, _apiKey).then((response) {
+      String language = handleLanguage(_lang, _playerPreferredLanguage);
+      createPlayerRequest(playerRegisterRequest, _apiKey, language)
+          .then((response) {
         if (response != null) {
           callback!(response, null);
         } else {
@@ -174,8 +181,9 @@ class GameballApp extends StatelessWidget {
   ///   - `callback`: The callback function to handle the event sending result.s
   void sendEvent(Event eventBody, SendEventCallback? callback) {
     try {
-      sendEventRequest(eventBody, _apiKey).then((response) {
-        if (response != null && response.statusCode == 200) {
+      String language = handleLanguage(_lang, _playerPreferredLanguage);
+      sendEventRequest(eventBody, _apiKey, language).then((response) {
+        if (response.statusCode == 200) {
           callback!(true, null);
         } else {
           callback!(false, null);
@@ -195,7 +203,8 @@ class GameballApp extends StatelessWidget {
   ///   - `playerUniqueId`: The unique ID of the player.
   ///   - `openDetail`: An optional URL to open within the profile.
   ///   - `hideNavigation`: An optional flag to indicate if the navigation bar should be hidden.
-  void showProfile(BuildContext context, String playerUniqueId, String? openDetail, bool? hideNavigation) {
+  void showProfile(BuildContext context, String playerUniqueId,
+      String? openDetail, bool? hideNavigation) {
     _playerUniqueId = playerUniqueId;
     _openDetail = openDetail;
     _hideNavigation = hideNavigation;
@@ -218,6 +227,8 @@ class GameballApp extends StatelessWidget {
             top: Radius.circular(20.0)), // Set the top border radius
       ),
       builder: (BuildContext context) {
+        String language = handleLanguage(_lang, _playerPreferredLanguage);
+
         return SizedBox(
           height: MediaQuery.of(context).size.height * 0.93,
           // Adjust the height as desired (e.g., 95% of the screen height)
@@ -233,8 +244,8 @@ class GameballApp extends StatelessWidget {
               ),
               Positioned(
                 top: 10.0,
-                left: _lang == 'ar' ? 10.0 : null,
-                right: _lang == 'en' ? 10.0 : null,
+                left: isRtl(language) ? 10.0 : null,
+                right: isLtr(language) ? 10.0 : null,
                 child: IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () {
@@ -252,26 +263,36 @@ class GameballApp extends StatelessWidget {
   /// Builds the URL for the Gameball profile widget.
   ///
   /// Constructs the URL based on the provided parameters and returns it.
-  String _buildWidgetUrl(){
+  String _buildWidgetUrl() {
+    String language = handleLanguage(_lang, _playerPreferredLanguage);
+
     String widgetUrl = widgetBaseUrl;
 
     widgetUrl += '&playerid=$_playerUniqueId';
 
-    widgetUrl += '&lang=${_lang ?? 'en'}';
+    widgetUrl += '&lang=$language';
 
     widgetUrl += '&apiKey=$_apiKey';
 
-    widgetUrl += '&platform=${_platform ?? ''}';
+    if (!isNullOrEmpty(_platform)) {
+      widgetUrl += '&platform=$_platform';
+    }
 
-    widgetUrl += '&shop=${_shop ?? ''}';
+    if (!isNullOrEmpty(_shop)) {
+      widgetUrl += '&platform=$_shop';
+    }
 
     widgetUrl += '&os=${getDevicePlatform()}';
 
-    widgetUrl += '&sdk=Flutter/${getPckageInfo()?.version}';
+    widgetUrl += '&sdk=Flutter/$getSdkVersion()';
 
-    widgetUrl += '&openDetail=${_openDetail ?? ''}';
+    if (!isNullOrEmpty(_openDetail)) {
+      widgetUrl += '&openDetail=$_openDetail';
+    }
 
-    widgetUrl += '&hideNavigation=${_hideNavigation ?? ''}';
+    if (_hideNavigation != null) {
+      widgetUrl += '&hideNavigation=$_hideNavigation';
+    }
 
     return widgetUrl;
   }
@@ -281,4 +302,3 @@ class GameballApp extends StatelessWidget {
     return Container();
   }
 }
-
