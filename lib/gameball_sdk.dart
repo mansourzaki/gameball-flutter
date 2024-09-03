@@ -1,5 +1,7 @@
 library gameball_sdk;
 
+import 'package:gameball_sdk/utils/gameball_utils.dart';
+import 'package:gameball_sdk/utils/language_utils.dart';
 import 'package:gameball_sdk/utils/platform_utils.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
@@ -14,7 +16,6 @@ import 'network/request_calls/create_player_request.dart';
 import 'network/request_calls/send_event_request.dart';
 
 import 'network/utils/constants.dart';
-import 'network/utils/header_generator.dart';
 
 class GameballApp extends StatelessWidget {
   static GameballApp? _instance;
@@ -252,26 +253,36 @@ class GameballApp extends StatelessWidget {
   /// Builds the URL for the Gameball profile widget.
   ///
   /// Constructs the URL based on the provided parameters and returns it.
-  String _buildWidgetUrl(){
+  String _buildWidgetUrl() {
+    String language = handleLanguage(_lang, _playerPreferredLanguage);
+
     String widgetUrl = widgetBaseUrl;
 
     widgetUrl += '&playerid=$_playerUniqueId';
 
-    widgetUrl += '&lang=${_lang ?? 'en'}';
+    widgetUrl += '&lang=$language';
 
     widgetUrl += '&apiKey=$_apiKey';
 
-    widgetUrl += '&platform=${_platform ?? ''}';
+    if (!isNullOrEmpty(_platform)) {
+      widgetUrl += '&platform=$_platform';
+    }
 
-    widgetUrl += '&shop=${_shop ?? ''}';
+    if (!isNullOrEmpty(_shop)) {
+      widgetUrl += '&platform=$_shop';
+    }
 
     widgetUrl += '&os=${getDevicePlatform()}';
 
-    widgetUrl += '&sdk=Flutter/${getPckageInfo()?.version}';
+    widgetUrl += '&sdk=Flutter/$getSdkVersion()';
 
-    widgetUrl += '&openDetail=${_openDetail ?? ''}';
+    if (!isNullOrEmpty(_openDetail)) {
+      widgetUrl += '&openDetail=$_openDetail';
+    }
 
-    widgetUrl += '&hideNavigation=${_hideNavigation ?? ''}';
+    if (_hideNavigation != null) {
+      widgetUrl += '&hideNavigation=$_hideNavigation';
+    }
 
     return widgetUrl;
   }
