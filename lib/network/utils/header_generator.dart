@@ -17,6 +17,6 @@ Map<String, String> getRequestHeaders(String apiKey, String lang) {
     'ApiKey': apiKey,
     'Lang': lang,
     'x-gb-agent':
-        'Flutter/$getSdkVersion()/${Platform.I.operatingSystem}/${Platform.I.version}'
+        'Flutter/${getSdkVersion()}/${Platform.I.operatingSystem}/${Platform.I.version}'
   };
 }

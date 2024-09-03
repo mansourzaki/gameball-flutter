@@ -284,7 +284,7 @@ class GameballApp extends StatelessWidget {
 
     widgetUrl += '&os=${getDevicePlatform()}';
 
-    widgetUrl += '&sdk=Flutter/$getSdkVersion()';
+    widgetUrl += '&sdk=Flutter-${getSdkVersion()}';
 
     if (!isNullOrEmpty(_openDetail)) {
       widgetUrl += '&openDetail=$_openDetail';
