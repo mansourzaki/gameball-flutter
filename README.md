@@ -101,10 +101,10 @@ gameballApp.sendEvent(eventBody, (success, error) {
 ```
 Dart
 
-gameballApp.showProfile(context, "{playerUniqueId}", "{openDetail}", "{hideNavigation}");
+gameballApp.showProfile(context, "{playerUniqueId}", "{openDetail}", "{hideNavigation}", "{showCloseButton}");
 ```
 * Replace `context` with the current build context.
-* Use placeholders for `playerUniqueId`, `openDetail` (optional URL to open within the profile), and `hideNavigation` (optional boolean to hide navigation arrow).
+* Use placeholders for `playerUniqueId`, `openDetail` (optional URL to open within the profile), `hideNavigation` (optional boolean to hide/show navigation arrow), `showCloseButton` (optional boolean to hide/show close button).
   Note: Replace all instances of `"{...}"` placeholders with your actual values.
 
 # Additional Resources
