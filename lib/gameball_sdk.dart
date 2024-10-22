@@ -31,6 +31,7 @@ class GameballApp extends StatelessWidget {
   static String? _referralCode;
   static String? _openDetail;
   static bool? _hideNavigation;
+  static bool _showCloseButton = true;
 
   /// Retrieves the singleton instance of the GameballApp class.
   ///
@@ -203,11 +204,15 @@ class GameballApp extends StatelessWidget {
   ///   - `playerUniqueId`: The unique ID of the player.
   ///   - `openDetail`: An optional URL to open within the profile.
   ///   - `hideNavigation`: An optional flag to indicate if the navigation bar should be hidden.
+  ///   - `showCloseButton`: An optional flag to control the visibility of a close button, Defaulted to always show.
   void showProfile(BuildContext context, String playerUniqueId,
-      String? openDetail, bool? hideNavigation) {
+      String? openDetail, bool? hideNavigation, bool? showCloseButton) {
     _playerUniqueId = playerUniqueId;
     _openDetail = openDetail;
     _hideNavigation = hideNavigation;
+    if(showCloseButton != null){
+      _showCloseButton = showCloseButton;
+    }
     _openBottomSheet(context);
   }
 
@@ -242,17 +247,18 @@ class GameballApp extends StatelessWidget {
                   javascriptMode: JavascriptMode.unrestricted,
                 ),
               ),
-              Positioned(
-                top: 10.0,
-                left: isRtl(language) ? 10.0 : null,
-                right: isLtr(language) ? 10.0 : null,
-                child: IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
+              if(_showCloseButton)
+                Positioned(
+                  top: 10.0,
+                  left: isRtl(language) ? 10.0 : null,
+                  right: isLtr(language) ? 10.0 : null,
+                  child: IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
                 ),
-              ),
             ],
           ),
         );
