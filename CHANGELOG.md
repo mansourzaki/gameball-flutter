@@ -1,3 +1,7 @@
+## 1.0.3
+
+* Added the option to show/hide the widget close button
+
 ## 1.0.2
 
 * Fixed an issue while building the widget url and the http requests header
