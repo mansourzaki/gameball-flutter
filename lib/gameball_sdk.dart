@@ -1,5 +1,6 @@
 library gameball_sdk;
 
+import 'package:gameball_sdk/network/request_calls/register_customer_request.dart';
 import 'package:gameball_sdk/utils/gameball_utils.dart';
 import 'package:gameball_sdk/utils/language_utils.dart';
 import 'package:gameball_sdk/utils/platform_utils.dart';
@@ -9,10 +10,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import 'models/requests/event.dart';
-import 'models/requests/player_attributes.dart';
-import 'models/requests/player_register_request.dart';
+import 'models/requests/customer_attributes.dart';
+import 'models/requests/initialize_customer_request.dart';
 import 'network/models/callbacks.dart';
-import 'network/request_calls/create_player_request.dart';
 import 'network/request_calls/send_event_request.dart';
 
 import 'network/utils/constants.dart';
@@ -20,14 +20,15 @@ import 'network/utils/constants.dart';
 class GameballApp extends StatelessWidget {
   static GameballApp? _instance;
   static String _apiKey = "";
-  static String _playerUniqueId = "";
+  static String _customerId = "";
   static String _deviceToken = "";
   static String _lang = "";
   static String? _platform;
   static String? _shop;
-  static String? _playerPreferredLanguage;
-  static String? _playerEmail;
-  static String? _playerMobile;
+  static String? _customerPreferredLanguage;
+  static String? _customerEmail;
+  static String? _customerMobile;
+  static bool? _isGuest;
   static String? _referralCode;
   static String? _openDetail;
   static bool? _hideNavigation;
@@ -85,26 +86,28 @@ class GameballApp extends StatelessWidget {
     }
   }
 
-  /// Registers a player with Gameball.
+  /// Registers a customer with Gameball.
   ///
-  /// This method initiates the player registration process, including fetching the device token, handling referral codes, and sending the registration request.
+  /// This method initiates the customer registration process, including fetching the device token, handling referral codes, and sending the registration request.
   ///
   /// Arguments:
-  ///   - `playerUniqueId`: The unique identifier for the player.
-  ///   - `playerEmail`: The player's email address (optional).
-  ///   - `playerMobile`: The player's mobile number (optional).
-  ///   - `playerAttributes`: Additional player attributes.
+  ///   - `customerId`: The unique identifier for the customer.
+  ///   - `customerEmail`: The customer's email address (optional).
+  ///   - `customerMobile`: The customer's mobile number (optional).
+  ///   - `isGuest`: The customer's state whether a guest or not (optional).
+  ///   - `customerAttributes`: Additional customer attributes.
   ///   - `responseCallback`: A callback function to handle the registration response.
-  Future<void> registerPlayer(
-    String playerUniqueId,
-    String? playerEmail,
-    String? playerMobile,
-    PlayerAttributes? playerAttributes,
+  Future<void> registerCustomer(
+    String customerId,
+    String? customerEmail,
+    String? customerMobile,
+    bool? isGuest,
+    CustomerAttributes? customerAttributes,
     RegisterCallback? responseCallback,
   ) async {
-    _playerUniqueId = playerUniqueId.trim();
+    _customerId = customerId.trim();
 
-    if (isNullOrEmpty(_playerUniqueId) || isNullOrEmpty(_apiKey)) {
+    if (isNullOrEmpty(_customerId) || isNullOrEmpty(_apiKey)) {
       responseCallback!(null, null);
       return;
     }
@@ -120,46 +123,53 @@ class GameballApp extends StatelessWidget {
     await _handleDynamicLink(referralCodeRegistrationCallback)
         .then((response) {});
 
-    final email = playerEmail?.trim();
-    final mobile = playerMobile?.trim();
+    final email = customerEmail?.trim();
+    final mobile = customerMobile?.trim();
 
     if (!isNullOrEmpty(email)) {
-      _playerEmail = email;
+      _customerEmail = email;
     }
 
     if (!isNullOrEmpty(mobile)) {
-      _playerMobile = mobile;
+      _customerMobile = mobile;
     }
 
-    if (playerAttributes?.preferredLanguage != null &&
-        playerAttributes?.preferredLanguage?.length == 2) {
-      _playerPreferredLanguage = playerAttributes?.preferredLanguage;
+    if (customerAttributes?.preferredLanguage != null &&
+        customerAttributes?.preferredLanguage?.length == 2) {
+      _customerPreferredLanguage = customerAttributes?.preferredLanguage;
     }
 
-    _registerDevice(playerAttributes, responseCallback);
+    if(isGuest == null){
+      _isGuest = false;
+    }else{
+      _isGuest = isGuest;
+    }
+    
+    _registerDevice(customerAttributes, responseCallback);
   }
 
-  /// Registers the device with Gameball using the provided player attributes.
+  /// Registers the device with Gameball using the provided customer attributes.
   ///
-  /// This method constructs a `PlayerRegisterRequest` object and sends it to the Gameball API.
+  /// This method constructs a `customerRegisterRequest` object and sends it to the Gameball API.
   /// The callback is invoked with the response or any encountered error.
   ///
   /// Arguments:
-  ///   - `playerAttributes`: Optional player attributes to include in the request.
+  ///   - `customerAttributes`: Optional customer attributes to include in the request.
   ///   - `callback`: The callback function to handle the registration result.
   void _registerDevice(
-      PlayerAttributes? playerAttributes, RegisterCallback? callback) {
-    PlayerRegisterRequest playerRegisterRequest = PlayerRegisterRequest(
-        playerUniqueID: _playerUniqueId,
+      CustomerAttributes? customerAttributes, RegisterCallback? callback) {
+    InitializeCustomerRequest customerRegisterRequest = InitializeCustomerRequest(
+        customerId: _customerId,
         deviceToken: _deviceToken,
-        email: _playerEmail,
-        mobileNumber: _playerMobile,
-        playerAttributes: playerAttributes,
-        referrerCode: _referralCode);
+        email: _customerEmail,
+        mobileNumber: _customerMobile,
+        customerAttributes: customerAttributes,
+        referrerCode: _referralCode,
+        isGuest: _isGuest);
 
     try {
-      String language = handleLanguage(_lang, _playerPreferredLanguage);
-      createPlayerRequest(playerRegisterRequest, _apiKey, language)
+      String language = handleLanguage(_lang, _customerPreferredLanguage);
+      registerCustomerRequest(customerRegisterRequest, _apiKey, language)
           .then((response) {
         if (response != null) {
           callback!(response, null);
@@ -182,7 +192,7 @@ class GameballApp extends StatelessWidget {
   ///   - `callback`: The callback function to handle the event sending result.s
   void sendEvent(Event eventBody, SendEventCallback? callback) {
     try {
-      String language = handleLanguage(_lang, _playerPreferredLanguage);
+      String language = handleLanguage(_lang, _customerPreferredLanguage);
       sendEventRequest(eventBody, _apiKey, language).then((response) {
         if (response.statusCode == 200) {
           callback!(true, null);
@@ -200,20 +210,20 @@ class GameballApp extends StatelessWidget {
   /// This method initiates the process of showing the Gameball profile within a bottom sheet.
   ///
   /// Arguments:
-  ///   - `context`: The build context for creating the bottom sheet.
-  ///   - `playerUniqueId`: The unique ID of the player.
+  ///   - `context`: The build context for creating the customer profile widget.
+  ///   - `customerId`: The unique identifier of the customer.
   ///   - `openDetail`: An optional URL to open within the profile.
   ///   - `hideNavigation`: An optional flag to indicate if the navigation bar should be hidden.
   ///   - `showCloseButton`: An optional flag to control the visibility of a close button, Defaulted to always show.
-  void showProfile(BuildContext context, String playerUniqueId,
+  void showProfile(BuildContext context, String customerId,
       String? openDetail, bool? hideNavigation, bool? showCloseButton) {
-    _playerUniqueId = playerUniqueId;
+    _customerId = customerId;
     _openDetail = openDetail;
     _hideNavigation = hideNavigation;
     if(showCloseButton != null){
       _showCloseButton = showCloseButton;
     }
-    _openBottomSheet(context);
+    _openCustomerProfileWidget(context);
   }
 
   /// Opens a bottom sheet to display the Gameball profile.
@@ -221,45 +231,63 @@ class GameballApp extends StatelessWidget {
   /// Creates a bottom sheet with a WebView displaying the Gameball profile based on the provided parameters.
   ///
   /// Arguments:
-  ///   - `context`: The build context for creating the bottom sheet.
-  void _openBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      isScrollControlled: true,
-      isDismissible: true,
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-            top: Radius.circular(20.0)), // Set the top border radius
-      ),
-      builder: (BuildContext context) {
-        String language = handleLanguage(_lang, _playerPreferredLanguage);
+  ///   - `context`: The build context for creating the customer profile widget.
+  void _openCustomerProfileWidget(BuildContext context) {
+    var widgetWebviewController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0x00000000))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {},
+          onPageStarted: (String url) {},
+          onPageFinished: (String url) {},
+          onHttpError: (HttpResponseError error) {},
+          onWebResourceError: (WebResourceError error) {},
+          onNavigationRequest: (NavigationRequest request) {
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(_buildWidgetUrl()));
 
-        return SizedBox(
-          height: MediaQuery.of(context).size.height * 0.93,
-          // Adjust the height as desired (e.g., 95% of the screen height)
-          child: Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20.0)), // Set the top border radius
-                child: WebView(
-                  initialUrl: _buildWidgetUrl(),
-                  javascriptMode: JavascriptMode.unrestricted,
-                ),
-              ),
-              if(_showCloseButton)
-                Positioned(
-                  top: 10.0,
-                  left: isRtl(language) ? 10.0 : null,
-                  right: isLtr(language) ? 10.0 : null,
-                  child: IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        String language = handleLanguage(_lang, _customerPreferredLanguage);
+
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+          ),
+          insetPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.95,
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20.0)),
+                  child: Container(
+                    height: MediaQuery.of(context).size.height, // Set bounded height for WebView
+                    child: WebViewWidget(
+                      controller: widgetWebviewController,
+                    ),
                   ),
                 ),
-            ],
+                if (_showCloseButton)
+                  Positioned(
+                    top: 10.0,
+                    left: isRtl(language) ? 10.0 : null,
+                    right: isLtr(language) ? 10.0 : null,
+                    child: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       },
@@ -270,11 +298,11 @@ class GameballApp extends StatelessWidget {
   ///
   /// Constructs the URL based on the provided parameters and returns it.
   String _buildWidgetUrl() {
-    String language = handleLanguage(_lang, _playerPreferredLanguage);
+    String language = handleLanguage(_lang, _customerPreferredLanguage);
 
     String widgetUrl = widgetBaseUrl;
 
-    widgetUrl += '&playerid=$_playerUniqueId';
+    widgetUrl += '&playerid=$_customerId';
 
     widgetUrl += '&lang=$language';
 

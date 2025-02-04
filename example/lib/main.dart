@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:gameball_sdk/gameball_sdk.dart';
 import 'package:gameball_sdk/models/requests/event.dart';
-import 'package:gameball_sdk/models/requests/player_attributes.dart';
+import 'package:gameball_sdk/models/requests/customer_attributes.dart';
 
 void main() {
   runApp(const MyApp());
@@ -60,16 +60,16 @@ class _MyHomePageState extends State<MyHomePage> {
     gameballApp.init("{api_key}", "{lang}", "{platform}", "{shop}");
     setState(() {
 
-      playerRegistrationCallback(response, error) {
+      customerRegistrationCallback(response, error) {
         if(error == null && response != null){
-          gameballApp.showProfile(context, "{playerUniqueId}", "{openDetail}", false);
+          gameballApp.showProfile(context, "{customerId}", "{openDetail}", false);
         }
         else{
           // TODO
         }
       }
 
-      PlayerAttributes playerAttributes = PlayerAttributes(
+      CustomerAttributes customerAttributes = CustomerAttributes(
           displayName: "John Doe",
           firstName: "John",
           lastName: "Doe",
@@ -80,12 +80,13 @@ class _MyHomePageState extends State<MyHomePage> {
           }
       );
 
-      gameballApp.registerPlayer(
-          "{playerUniqueId}",
-          "{playerEmail}",
-          "{playerMobile}",
-          playerAttributes,
-          playerRegistrationCallback);
+      gameballApp.registerCustomer(
+          "{customerId}",
+          "{customerEmail}",
+          "{customerMobile}",
+          false, // isGuest = false, not a guest
+          customerAttributes,
+          customerRegistrationCallback);
 
       sendEventCallback(response, error){
         if(error == null && response != null){
@@ -97,7 +98,7 @@ class _MyHomePageState extends State<MyHomePage> {
       }
 
       Event eventBody = Event(
-          playerUniqueId: "{playerUniqueId}",
+          customerId: "{customerId}",
           events: {
             "{eventName}": {
               "{prop1}": "{value1}"
