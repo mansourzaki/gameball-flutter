@@ -1,7 +1,7 @@
 # Gameball Flutter SDK
 ## `Gameball Flutter SDK` is a library that allows you to integrate the Gameball platform's features into your Flutter applications. It enables you to:
 
-  * Register customers and track their activities.
+* Register customers and track their activities.
 * Send personalized events to trigger Gameball campaigns.
 * Display the Gameball user interface within your app.
 
