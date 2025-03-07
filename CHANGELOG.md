@@ -1,3 +1,10 @@
+## 2.1.0
+
+Now you can send Huawei Push Messages through Gameball !!
+*Added Support for Huawei Push Messages
+*Separated the Firebase token retrieval from registerCustomer flow to be separate
+*You'll have to initializeFirebase() or initializeHuawei() depending on your push provider before registering the customer
+
 ## 2.0.1
 * Minor Fix: Set the Customer profile widget close button icon color to
 a darker color to avoid blending with the background
