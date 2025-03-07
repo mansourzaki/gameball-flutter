@@ -72,6 +72,9 @@ class InitializeCustomerRequest {
   @JsonKey(name: "guest")
   bool? isGuest;
 
+  @JsonKey(name: "pushServiceProvider")
+  String? pushProvider;
+
   /// Creates a new `InitializeCustomerRequest` object.
   ///
   /// Arguments:
@@ -92,10 +95,10 @@ class InitializeCustomerRequest {
     this.email,
     this.mobileNumber,
     this.isGuest,
+    this.pushProvider
   }) {
     osType = getDevicePlatform(); // Automatically set osType based on platform
   }
-
 
   /// Converts the `InitializeCustomerRequest` object to a JSON map.
   ///
