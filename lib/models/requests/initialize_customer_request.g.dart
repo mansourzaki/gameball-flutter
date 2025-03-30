@@ -20,6 +20,7 @@ InitializeCustomerRequest _$InitializeCustomerRequestFromJson(
       email: json['email'] as String?,
       mobileNumber: json['mobile'] as String?,
       isGuest: json['guest'] as bool?,
+      pushProvider: json['pushServiceProvider'] as String?,
     );
 
 Map<String, dynamic> _$InitializeCustomerRequestToJson(
@@ -33,4 +34,5 @@ Map<String, dynamic> _$InitializeCustomerRequestToJson(
       'email': instance.email,
       'mobile': instance.mobileNumber,
       'guest': instance.isGuest,
+      'pushServiceProvider': instance.pushProvider,
     };

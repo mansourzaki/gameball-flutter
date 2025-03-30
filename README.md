@@ -53,7 +53,19 @@ Future<void> main() async {
 }
 ```
 3. Customer Registration:
+* To send push messages: Make sure to call the respective method ```initializeFirebase``` or ```initializeHuawei``` depending on the push provider used.
+```
+Dart
+// Firebase FCM
+// Make sure that Firebase is initialized
+gameballApp.initializeFirebase(); 
+
+// Huawei Push Kit
+String token = ""; // Retrieve it using HuaweiServices
+gameballApp.initalizeHuawei(token);
+```
 * Register a customer with their unique identifier, email (optional), mobile number (optional), and custom attributes:
+
 ```
 Dart
 

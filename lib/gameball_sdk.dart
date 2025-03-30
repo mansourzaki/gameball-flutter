@@ -22,6 +22,7 @@ class GameballApp extends StatelessWidget {
   static String _apiKey = "";
   static String _customerId = "";
   static String _deviceToken = "";
+  static String _pushProvider = "";
   static String _lang = "";
   static String? _platform;
   static String? _shop;
@@ -55,13 +56,22 @@ class GameballApp extends StatelessWidget {
   /// Initializes Firebase Messaging and retrieves the device token.
   ///
   /// This method fetches the device token from Firebase Messaging and stores it
-  /// in the `_deviceToken` property for later use.
-  _initializeFirebase() {
+  /// in the `_deviceToken` property for later use with the `_pushProvider` variable.
+  initializeFirebase() {
     FirebaseMessaging.instance.getToken().then((token) {
       if (token != null) {
         _deviceToken = token;
+        _pushProvider = "Firebase";
       }
     });
+  }
+  /// Initializes Huawei push kit device token
+  ///
+  /// This method sets the device token and stores it
+  /// in the `_deviceToken` property for later use with the `_pushProvider` variable.
+  initializeHuawei(String deviceToken) {
+    _deviceToken = deviceToken;
+    _pushProvider = "Huawei";
   }
 
   /// Handles incoming Firebase Dynamic Links containing potential referral codes.
@@ -88,7 +98,7 @@ class GameballApp extends StatelessWidget {
 
   /// Registers a customer with Gameball.
   ///
-  /// This method initiates the customer registration process, including fetching the device token, handling referral codes, and sending the registration request.
+  /// This method initiates the customer registration process, handling referral codes, and sending the registration request.
   ///
   /// Arguments:
   ///   - `customerId`: The unique identifier for the customer.
@@ -111,8 +121,6 @@ class GameballApp extends StatelessWidget {
       responseCallback!(null, null);
       return;
     }
-
-    _initializeFirebase();
 
     referralCodeRegistrationCallback(response, error) {
       if (error == null && response != null) {
@@ -165,7 +173,8 @@ class GameballApp extends StatelessWidget {
         mobileNumber: _customerMobile,
         customerAttributes: customerAttributes,
         referrerCode: _referralCode,
-        isGuest: _isGuest);
+            isGuest: _isGuest,
+            pushProvider: _pushProvider);
 
     try {
       String language = handleLanguage(_lang, _customerPreferredLanguage);
