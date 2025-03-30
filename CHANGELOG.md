@@ -1,9 +1,13 @@
+## 2.2.0
+* As Firebase Dynamic Links are being deprecated, the dependency was removed from the registerCustomer flow, allowing it to be used independently if needed.
+* A new referralCode parameter was added to support seamless integration with other platforms.
+
 ## 2.1.0
 
 Now you can send Huawei Push Messages through Gameball !!
-*Added Support for Huawei Push Messages
-*Separated the Firebase token retrieval from registerCustomer flow to be separate
-*You'll have to initializeFirebase() or initializeHuawei() depending on your push provider before registering the customer
+* Added Support for Huawei Push Messages
+* Separated the Firebase token retrieval from registerCustomer flow to be separate
+* You'll have to initializeFirebase() or initializeHuawei() depending on your push provider before registering the customer
 
 ## 2.0.1
 * Minor Fix: Set the Customer profile widget close button icon color to
