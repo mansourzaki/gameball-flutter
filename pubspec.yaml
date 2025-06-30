@@ -22,6 +22,7 @@ dependencies:
   platform_info: ^5.0.0
   webview_flutter: ^4.8.0
   build_runner: ^2.4.11
+  share_plus: ^11.0.0
 
 dev_dependencies:
   flutter_test:
