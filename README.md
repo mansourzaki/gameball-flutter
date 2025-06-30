@@ -39,7 +39,7 @@ Dart
 
 gameballApp.init("{api_key}", "{lang}", "{platform}", "{shop}");
 ```
-2. Firebase Initialization (for referral handling):
+2. Firebase Initialization (for notifications and referral handling):
 * Ensure Firebase is initialized in your app before using referral features:
 ```
 Dart
@@ -64,7 +64,7 @@ gameballApp.initializeFirebase();
 String token = ""; // Retrieve it using HuaweiServices
 gameballApp.initalizeHuawei(token);
 ```
-* Register a customer with their unique identifier, email (optional), mobile number (optional), and custom attributes:
+* Register a customer with their unique identifier, email (optional), mobile number (optional), referral code (optional), is guest (optional) and custom attributes:
 
 ```
 Dart
@@ -84,6 +84,7 @@ gameballApp.registerCustomer(
   "{customerId}",
   "{customerEmail}",
   "{customerMobile}",
+  "abc123", //ReferralCode
   false, //isGuest = false
   CustomerAttributes,
   (response, error) {
@@ -91,6 +92,28 @@ gameballApp.registerCustomer(
   },
 );
 ```
+
+Using Firebase Dynamic Links for Referrals (Optional)
+> 💡 **Hint:** On August 25th, 2025, Firebase Dynamic Links will shut down. All links served by Firebase Dynamic Links (both hosted on custom domains and page.link subdomains) will stop working and you will no longer be able to create new links.
+
+
+If you'd like to support referrals via **Firebase Dynamic Links**, you can optionally call `handleFirebaseDynamicLink`:
+
+```dart
+customerReferralCodeCallback(response, error) {
+  if (error == null && response != null) {
+    // Use the referral code
+    // You can pass the extracted `referralCode` to `registerCustomer` for seamless integration.
+    print('Referral code: $response');
+  } else {
+    // Handle error or missing referral code
+    print('No referral code found or an error occurred');
+  }
+}
+
+gameballApp.handleFirebaseDynamicLink(customerReferralCodeCallback);
+```
+
 4. Sending Events:
 * Define an `Event` object with the customer's unique identifier and event details:
 ```
@@ -102,7 +125,7 @@ Event eventBody = Event(
     "{eventName}": {
       "{prop1}": "{value1}",
     },
-  },
+  }, 
 );
 
 gameballApp.sendEvent(eventBody, (success, error) {

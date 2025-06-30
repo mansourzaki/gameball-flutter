@@ -66,10 +66,20 @@ class _MyHomePageState extends State<MyHomePage> {
       String deviceToken = "{deviceToken}";
       gameballApp.initializeHuawei(deviceToken);
 
+      customerReferralCodeCallback(response, error) {
+        if (error == null && response != null) {
+          // TODO
+        } else {
+          // TODO
+        }
+      }
+
+      gameballApp.handleFirebaseDynamicLink(customerReferralCodeCallback);
+
       customerRegistrationCallback(response, error) {
         if (error == null && response != null) {
           gameballApp.showProfile(
-              context, "{customerId}", "{openDetail}", false);
+              context, "{customerId}", "{openDetail}", false, true);
         } else {
           // TODO
         }
@@ -87,6 +97,7 @@ class _MyHomePageState extends State<MyHomePage> {
           "{customerId}",
           "{customerEmail}",
           "{customerMobile}",
+          "{referralCode}",
           false, // isGuest = false, not a guest
           customerAttributes,
           customerRegistrationCallback);

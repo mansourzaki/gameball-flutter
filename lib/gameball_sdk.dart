@@ -83,7 +83,7 @@ class GameballApp extends StatelessWidget {
   ///
   /// This method is typically used in conjunction with registering a listener
   /// for dynamic links to handle referrals throughout the app's lifecycle.
-  Future<void> _handleDynamicLink(ReferralCodeCallback callback) async {
+  Future<void> handleFirebaseDynamicLink(ReferralCodeCallback callback) async {
     final PendingDynamicLinkData? data =
         await FirebaseDynamicLinks.instance.getInitialLink();
 
@@ -104,6 +104,7 @@ class GameballApp extends StatelessWidget {
   ///   - `customerId`: The unique identifier for the customer.
   ///   - `customerEmail`: The customer's email address (optional).
   ///   - `customerMobile`: The customer's mobile number (optional).
+  ///   - `referralCode`: The referral code of the customer who referred this customer (optional).
   ///   - `isGuest`: The customer's state whether a guest or not (optional).
   ///   - `customerAttributes`: Additional customer attributes.
   ///   - `responseCallback`: A callback function to handle the registration response.
@@ -111,6 +112,7 @@ class GameballApp extends StatelessWidget {
     String customerId,
     String? customerEmail,
     String? customerMobile,
+    String? referralCode,
     bool? isGuest,
     CustomerAttributes? customerAttributes,
     RegisterCallback? responseCallback,
@@ -122,15 +124,6 @@ class GameballApp extends StatelessWidget {
       return;
     }
 
-    referralCodeRegistrationCallback(response, error) {
-      if (error == null && response != null) {
-        _referralCode = response;
-      }
-    }
-
-    await _handleDynamicLink(referralCodeRegistrationCallback)
-        .then((response) {});
-
     final email = customerEmail?.trim();
     final mobile = customerMobile?.trim();
 
@@ -140,6 +133,10 @@ class GameballApp extends StatelessWidget {
 
     if (!isNullOrEmpty(mobile)) {
       _customerMobile = mobile;
+    }
+
+    if (!isNullOrEmpty(referralCode)) {
+      _referralCode = referralCode;
     }
 
     if (customerAttributes?.preferredLanguage != null &&
@@ -166,16 +163,16 @@ class GameballApp extends StatelessWidget {
   ///   - `callback`: The callback function to handle the registration result.
   void _registerDevice(
       CustomerAttributes? customerAttributes, RegisterCallback? callback) {
-    InitializeCustomerRequest customerRegisterRequest = InitializeCustomerRequest(
-        customerId: _customerId,
-        deviceToken: _deviceToken,
-        email: _customerEmail,
-        mobileNumber: _customerMobile,
-        customerAttributes: customerAttributes,
-        referrerCode: _referralCode,
+    InitializeCustomerRequest customerRegisterRequest =
+        InitializeCustomerRequest(
+            customerId: _customerId,
+            deviceToken: _deviceToken,
+            email: _customerEmail,
+            mobileNumber: _customerMobile,
+            customerAttributes: customerAttributes,
+            referrerCode: _referralCode,
             isGuest: _isGuest,
             pushProvider: _pushProvider);
-
     try {
       String language = handleLanguage(_lang, _customerPreferredLanguage);
       registerCustomerRequest(customerRegisterRequest, _apiKey, language)
