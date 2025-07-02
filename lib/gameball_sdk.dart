@@ -236,7 +236,7 @@ class GameballApp extends StatelessWidget {
   }
 
   void _nativeShare(String title, String text, String url) {
-    final bodyText = title.isNotEmpty ? '$title\n\n$url' : url;
+    final bodyText = text.isNotEmpty ? text : title;
 
     Share.share(
       bodyText,
