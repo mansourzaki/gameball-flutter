@@ -1,3 +1,6 @@
+## 2.2.1
+* Added JS injected script to open native sharing dialog in Android upon sharing content/urls
+
 ## 2.2.0
 * As Firebase Dynamic Links are being deprecated, the dependency was removed from the registerCustomer flow, allowing it to be used independently if needed.
 * A new referralCode parameter was added to support seamless integration with other platforms.

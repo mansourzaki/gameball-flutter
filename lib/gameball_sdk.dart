@@ -1,9 +1,12 @@
 library gameball_sdk;
 
+import 'dart:convert';
+
 import 'package:gameball_sdk/network/request_calls/register_customer_request.dart';
 import 'package:gameball_sdk/utils/gameball_utils.dart';
 import 'package:gameball_sdk/utils/language_utils.dart';
 import 'package:gameball_sdk/utils/platform_utils.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -232,6 +235,15 @@ class GameballApp extends StatelessWidget {
     _openCustomerProfileWidget(context);
   }
 
+  void _nativeShare(String title, String text, String url) {
+    final bodyText = title.isNotEmpty ? '$title\n\n$url' : url;
+
+    Share.share(
+      bodyText,
+      subject: title.isNotEmpty ? title : null,
+    );
+  }
+
   /// Opens a bottom sheet to display the Gameball profile.
   ///
   /// Creates a bottom sheet with a WebView displaying the Gameball profile based on the provided parameters.
@@ -239,14 +251,73 @@ class GameballApp extends StatelessWidget {
   /// Arguments:
   ///   - `context`: The build context for creating the customer profile widget.
   void _openCustomerProfileWidget(BuildContext context) {
-    var widgetWebviewController = WebViewController()
+    var widgetWebviewController = WebViewController();
+    widgetWebviewController
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..addJavaScriptChannel(
+        'Android',
+        onMessageReceived: (JavaScriptMessage message) {
+          try {
+            // Handle both JSON format and pipe-separated format
+            if (message.message.startsWith('{')) {
+              // JSON format
+              final data = json.decode(message.message);
+
+              if (data['action'] == 'nativeShare') {
+                final title = data['title'] ?? '';
+                final text = data['text'] ?? '';
+                final url = data['url'] ?? '';
+                _nativeShare(title, text, url);
+              }
+            } else if (message.message.startsWith('nativeShare|')) {
+              // Pipe-separated format
+              final parts = message.message.split('|');
+              if (parts.length >= 4) {
+                final title = parts[1];
+                final text = parts[2];
+                final url = parts[3];
+                _nativeShare(title, text, url);
+              }
+            } else {
+              // Legacy format - assume it's JSON with direct share data
+              final data = json.decode(message.message);
+              final text = data['text'] ?? '';
+              final title = data['title'] ?? '';
+              final url = data['url'] ?? '';
+              _nativeShare(title, text, url);
+            }
+          } catch (e) {}
+        },
+      )
       ..setBackgroundColor(const Color(0x00000000))
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {},
           onPageStarted: (String url) {},
-          onPageFinished: (String url) {},
+          onPageFinished: (String url) {
+            // Inject JavaScript to override native share function
+            widgetWebviewController.runJavaScript('''
+            // Override the native share if it exists or create a polyfill
+            if (typeof window.nativeShare === 'undefined') {
+              window.nativeShare = function(title, text, url) {
+                Android.postMessage('nativeShare|' + (title || '') + '|' + (text || '') + '|' + (url || ''));
+              };
+            }
+            
+            // Also support Web Share API polyfill
+            if (!navigator.share) {
+              navigator.share = function(params) {
+                Android.postMessage(JSON.stringify({
+                  action: 'nativeShare',
+                  title: params.title || '',
+                  text: params.text || '',
+                  url: params.url || ''
+                }));
+                return Promise.resolve();
+              };
+            }
+          ''');
+          },
           onHttpError: (HttpResponseError error) {},
           onWebResourceError: (WebResourceError error) {},
           onNavigationRequest: (NavigationRequest request) {
