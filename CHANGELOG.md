@@ -1,3 +1,7 @@
+## 2.2.2
+* Fixed native sharing showing only the captured text without the actual referral link
+* Handled external URL navigation from within the webview
+
 ## 2.2.1
 * Added JS injected script to open native sharing dialog in Android upon sharing content/urls
 
