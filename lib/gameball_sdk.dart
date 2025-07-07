@@ -1,6 +1,7 @@
 library gameball_sdk;
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:gameball_sdk/network/request_calls/register_customer_request.dart';
 import 'package:gameball_sdk/utils/gameball_utils.dart';
@@ -333,7 +334,10 @@ class GameballApp extends StatelessWidget {
           onHttpError: (HttpResponseError error) {},
           onWebResourceError: (WebResourceError error) {},
           onNavigationRequest: (NavigationRequest request) {
-            if(request.url.isNotEmpty && !request.url.contains(widgetBaseUrl)){
+            final uri = Uri.parse(request.url);
+            final widgetHost = Uri.parse(widgetBaseUrl).host;
+            final isExternal = request.url.isNotEmpty && !uri.host.contains(widgetHost);
+            if (isExternal) {
               _openExternalInAppBrowser(request.url);
               return NavigationDecision.prevent;
             }
