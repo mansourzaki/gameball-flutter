@@ -7,6 +7,7 @@ import 'package:gameball_sdk/utils/gameball_utils.dart';
 import 'package:gameball_sdk/utils/language_utils.dart';
 import 'package:gameball_sdk/utils/platform_utils.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -236,12 +237,23 @@ class GameballApp extends StatelessWidget {
   }
 
   void _nativeShare(String title, String text, String url) {
-    final bodyText = title.isNotEmpty ? '$title\n\n$url' : url;
+    final bodyText = text.isNotEmpty ? text : title;
 
     Share.share(
       bodyText,
       subject: title.isNotEmpty ? title : null,
     );
+  }
+
+  Future<void> _openExternalInAppBrowser(String url) async {
+    try {
+      final uri = Uri.parse(url);
+
+      await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication
+      );
+    } catch (e) {}
   }
 
   /// Opens a bottom sheet to display the Gameball profile.
@@ -321,6 +333,10 @@ class GameballApp extends StatelessWidget {
           onHttpError: (HttpResponseError error) {},
           onWebResourceError: (WebResourceError error) {},
           onNavigationRequest: (NavigationRequest request) {
+            if(request.url.isNotEmpty && !request.url.contains(widgetBaseUrl)){
+              _openExternalInAppBrowser(request.url);
+              return NavigationDecision.prevent;
+            }
             return NavigationDecision.navigate;
           },
         ),
