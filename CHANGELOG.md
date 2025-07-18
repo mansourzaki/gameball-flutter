@@ -1,3 +1,6 @@
+# 2.2.3
+* Handled external URLs navigation outside the Gameball Widget Webview for both iOS and Android
+
 ## 2.2.2
 * Fixed native sharing showing only the captured text without the actual referral link
 * Handled external URL navigation from within the webview
