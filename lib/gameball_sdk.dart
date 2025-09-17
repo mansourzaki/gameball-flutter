@@ -70,6 +70,7 @@ class GameballApp extends StatelessWidget {
       }
     });
   }
+
   /// Initializes Huawei push kit device token
   ///
   /// This method sets the device token and stores it
@@ -149,12 +150,12 @@ class GameballApp extends StatelessWidget {
       _customerPreferredLanguage = customerAttributes?.preferredLanguage;
     }
 
-    if(isGuest == null){
+    if (isGuest == null) {
       _isGuest = false;
-    }else{
+    } else {
       _isGuest = isGuest;
     }
-    
+
     _registerDevice(customerAttributes, responseCallback);
   }
 
@@ -226,15 +227,17 @@ class GameballApp extends StatelessWidget {
   ///   - `openDetail`: An optional URL to open within the profile.
   ///   - `hideNavigation`: An optional flag to indicate if the navigation bar should be hidden.
   ///   - `showCloseButton`: An optional flag to control the visibility of a close button, Defaulted to always show.
-  void showProfile(BuildContext context, String customerId,
-      String? openDetail, bool? hideNavigation, bool? showCloseButton) {
+  void showProfile(BuildContext context, String customerId, String? openDetail,
+      bool? hideNavigation, bool? showCloseButton,
+      {void Function(String message, BuildContext gameBallContext)?
+          onRequestIntercepted}) {
     _customerId = customerId;
     _openDetail = openDetail;
     _hideNavigation = hideNavigation;
-    if(showCloseButton != null){
+    if (showCloseButton != null) {
       _showCloseButton = showCloseButton;
     }
-    _openCustomerProfileWidget(context);
+    _openCustomerProfileWidget(context, onRequestIntercepted);
   }
 
   void _nativeShare(String title, String text, String url) {
@@ -250,10 +253,7 @@ class GameballApp extends StatelessWidget {
     try {
       final uri = Uri.parse(url);
 
-      await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication
-      );
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {}
   }
 
@@ -263,7 +263,9 @@ class GameballApp extends StatelessWidget {
   ///
   /// Arguments:
   ///   - `context`: The build context for creating the customer profile widget.
-  void _openCustomerProfileWidget(BuildContext context) {
+  void _openCustomerProfileWidget(BuildContext context,
+      [void Function(String message, BuildContext gameBallContext)?
+          onRequestIntercepted]) {
     var widgetWebviewController = WebViewController();
     widgetWebviewController
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -271,6 +273,20 @@ class GameballApp extends StatelessWidget {
         'Android',
         onMessageReceived: (JavaScriptMessage message) {
           try {
+            final msg = message.message; // extract string
+            if (msg.contains("win-animation.json")) {
+              if (onRequestIntercepted != null) {
+                onRequestIntercepted("win", context);
+              }
+              return;
+            }
+
+            if (msg.contains("better-luck-animation.json")) {
+              if (onRequestIntercepted != null) {
+                onRequestIntercepted("better_luck", context);
+              }
+              return;
+            }
             // Handle both JSON format and pipe-separated format
             if (message.message.startsWith('{')) {
               // JSON format
@@ -308,6 +324,35 @@ class GameballApp extends StatelessWidget {
           onProgress: (int progress) {},
           onPageStarted: (String url) {},
           onPageFinished: (String url) {
+            widgetWebviewController.runJavaScript('''
+            (function() {
+              var targets = [
+        "https://assets.gameball.co/widget/img/win-animation.json",
+        "https://assets.gameball.co/widget/img/better-luck-animation.json"
+      ];
+
+      const oldFetch = window.fetch;
+      window.fetch = function() {
+        return oldFetch.apply(this, arguments).then(res => {
+          if (targets.some(t => res.url.includes(t)) && res.status === 200) {
+            Android.postMessage(res.url); // send URL back to Flutter
+          }
+          return res;
+        });
+      };
+
+
+                const oldOpen = XMLHttpRequest.prototype.open;
+      XMLHttpRequest.prototype.open = function(method, url) {
+        this.addEventListener('load', function() {
+          if (targets.some(t => url.includes(t)) && this.status === 200) {
+            Android.postMessage(url); // send URL back to Flutter
+          }
+        });
+        return oldOpen.apply(this, arguments);
+      };
+    })();
+          ''');
             // Inject JavaScript to override native share function
             widgetWebviewController.runJavaScript('''
             // Override the native share if it exists or create a polyfill
@@ -336,7 +381,8 @@ class GameballApp extends StatelessWidget {
           onNavigationRequest: (NavigationRequest request) {
             final uri = Uri.parse(request.url);
             final widgetHost = Uri.parse(widgetBaseUrl).host;
-            final isExternal = request.url.isNotEmpty && !uri.host.contains(widgetHost);
+            final isExternal =
+                request.url.isNotEmpty && !uri.host.contains(widgetHost);
             if (isExternal) {
               _openExternalInAppBrowser(request.url);
               return NavigationDecision.prevent;
@@ -363,9 +409,12 @@ class GameballApp extends StatelessWidget {
             child: Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20.0)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(20.0)),
                   child: Container(
-                    height: MediaQuery.of(context).size.height, // Set bounded height for WebView
+                    height: MediaQuery.of(context)
+                        .size
+                        .height, // Set bounded height for WebView
                     child: WebViewWidget(
                       controller: widgetWebviewController,
                     ),
@@ -377,10 +426,7 @@ class GameballApp extends StatelessWidget {
                     left: isRtl(language) ? 10.0 : null,
                     right: isLtr(language) ? 10.0 : null,
                     child: IconButton(
-                      icon: const Icon(
-                          Icons.close,
-                          color: Color(0xFFCECECE)
-                      ),
+                      icon: const Icon(Icons.close, color: Color(0xFFCECECE)),
                       onPressed: () {
                         Navigator.of(context).pop();
                       },
@@ -427,7 +473,7 @@ class GameballApp extends StatelessWidget {
     if (_hideNavigation != null) {
       widgetUrl += '&hideNavigation=$_hideNavigation';
     }
-
+    print(widgetUrl.toString());
     return widgetUrl;
   }
 
