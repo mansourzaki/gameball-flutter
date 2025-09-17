@@ -229,15 +229,16 @@ class GameballApp extends StatelessWidget {
   ///   - `showCloseButton`: An optional flag to control the visibility of a close button, Defaulted to always show.
   void showProfile(BuildContext context, String customerId, String? openDetail,
       bool? hideNavigation, bool? showCloseButton,
-      {void Function(String message, BuildContext gameBallContext)?
-          onRequestIntercepted}) {
+      {Future<void> Function(String message, BuildContext gameBallContext)?
+          onRequestIntercepted,
+      List<String> urlsToWatch = const []}) {
     _customerId = customerId;
     _openDetail = openDetail;
     _hideNavigation = hideNavigation;
     if (showCloseButton != null) {
       _showCloseButton = showCloseButton;
     }
-    _openCustomerProfileWidget(context, onRequestIntercepted);
+    _openCustomerProfileWidget(context, onRequestIntercepted, urlsToWatch);
   }
 
   void _nativeShare(String title, String text, String url) {
@@ -257,35 +258,67 @@ class GameballApp extends StatelessWidget {
     } catch (e) {}
   }
 
+  /// Builds a JavaScript intercept script for the given URLs.
+  ///
+  /// This method constructs a JavaScript function that intercepts network requests
+  /// and sends messages back to the Flutter app when specific URLs are loaded.
+  ///
+  /// Arguments:
+  ///   - `urls`: A list of URLs to intercept.
+  ///
+  /// Returns:
+  ///   - A string containing the JavaScript code for the intercept script.
+  String buildInterceptScript(List<String> urls) {
+    final jsArray = urls.map((u) => '"$u"').join(",");
+    return """
+    (function() {
+      var targets = [$jsArray];
+
+      const oldFetch = window.fetch;
+      window.fetch = function() {
+        return oldFetch.apply(this, arguments).then(res => {
+          if (targets.some(t => res.url.includes(t)) && res.status === 200) {
+            Android.postMessage(res.url);
+          }
+          return res;
+        });
+      };
+
+      const oldOpen = XMLHttpRequest.prototype.open;
+      XMLHttpRequest.prototype.open = function(method, url) {
+        this.addEventListener('load', function() {
+          if (targets.some(t => url.includes(t)) && this.status === 200) {
+            Android.postMessage(url);
+          }
+        });
+        return oldOpen.apply(this, arguments);
+      };
+    })();
+  """;
+  }
+
   /// Opens a bottom sheet to display the Gameball profile.
   ///
   /// Creates a bottom sheet with a WebView displaying the Gameball profile based on the provided parameters.
   ///
   /// Arguments:
   ///   - `context`: The build context for creating the customer profile widget.
-  void _openCustomerProfileWidget(BuildContext context,
-      [void Function(String message, BuildContext gameBallContext)?
-          onRequestIntercepted]) {
+  void _openCustomerProfileWidget(
+    BuildContext context, [
+    Future<void> Function(String message, BuildContext gameBallContext)?
+        onRequestIntercepted,
+    List<String> urlsToWatch = const [],
+  ]) {
     var widgetWebviewController = WebViewController();
     widgetWebviewController
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..addJavaScriptChannel(
         'Android',
-        onMessageReceived: (JavaScriptMessage message) {
+        onMessageReceived: (JavaScriptMessage message) async {
           try {
             final msg = message.message; // extract string
-            if (msg.contains("win-animation.json")) {
-              if (onRequestIntercepted != null) {
-                onRequestIntercepted("win", context);
-              }
-              return;
-            }
-
-            if (msg.contains("better-luck-animation.json")) {
-              if (onRequestIntercepted != null) {
-                onRequestIntercepted("better_luck", context);
-              }
-              return;
+            if (onRequestIntercepted != null) {
+              await onRequestIntercepted(msg, context);
             }
             // Handle both JSON format and pipe-separated format
             if (message.message.startsWith('{')) {
@@ -324,35 +357,10 @@ class GameballApp extends StatelessWidget {
           onProgress: (int progress) {},
           onPageStarted: (String url) {},
           onPageFinished: (String url) {
-            widgetWebviewController.runJavaScript('''
-            (function() {
-              var targets = [
-        "https://assets.gameball.co/widget/img/win-animation.json",
-        "https://assets.gameball.co/widget/img/better-luck-animation.json"
-      ];
-
-      const oldFetch = window.fetch;
-      window.fetch = function() {
-        return oldFetch.apply(this, arguments).then(res => {
-          if (targets.some(t => res.url.includes(t)) && res.status === 200) {
-            Android.postMessage(res.url); // send URL back to Flutter
-          }
-          return res;
-        });
-      };
-
-
-                const oldOpen = XMLHttpRequest.prototype.open;
-      XMLHttpRequest.prototype.open = function(method, url) {
-        this.addEventListener('load', function() {
-          if (targets.some(t => url.includes(t)) && this.status === 200) {
-            Android.postMessage(url); // send URL back to Flutter
-          }
-        });
-        return oldOpen.apply(this, arguments);
-      };
-    })();
-          ''');
+            if (urlsToWatch.isNotEmpty) {
+              widgetWebviewController
+                  .runJavaScript(buildInterceptScript(urlsToWatch));
+            }
             // Inject JavaScript to override native share function
             widgetWebviewController.runJavaScript('''
             // Override the native share if it exists or create a polyfill
@@ -473,7 +481,7 @@ class GameballApp extends StatelessWidget {
     if (_hideNavigation != null) {
       widgetUrl += '&hideNavigation=$_hideNavigation';
     }
-    print(widgetUrl.toString());
+    
     return widgetUrl;
   }
 
