@@ -227,18 +227,25 @@ class GameballApp extends StatelessWidget {
   ///   - `openDetail`: An optional URL to open within the profile.
   ///   - `hideNavigation`: An optional flag to indicate if the navigation bar should be hidden.
   ///   - `showCloseButton`: An optional flag to control the visibility of a close button, Defaulted to always show.
-  void showProfile(BuildContext context, String customerId, String? openDetail,
-      bool? hideNavigation, bool? showCloseButton,
-      {Future<void> Function(String message, BuildContext gameBallContext)?
-          onRequestIntercepted,
-      List<String> urlsToWatch = const []}) {
+  void showProfile(
+    BuildContext context,
+    String customerId,
+    String? openDetail,
+    bool? hideNavigation,
+    bool? showCloseButton, {
+    Future<void> Function(String message, BuildContext gameBallContext)?
+        onRequestIntercepted,
+    List<String> urlsToWatch = const [],
+    void Function(BuildContext gameBallContext)? onClosed,
+  }) {
     _customerId = customerId;
     _openDetail = openDetail;
     _hideNavigation = hideNavigation;
     if (showCloseButton != null) {
       _showCloseButton = showCloseButton;
     }
-    _openCustomerProfileWidget(context, onRequestIntercepted, urlsToWatch);
+    _openCustomerProfileWidget(
+        context, onRequestIntercepted, urlsToWatch, onClosed);
   }
 
   void _nativeShare(String title, String text, String url) {
@@ -308,6 +315,7 @@ class GameballApp extends StatelessWidget {
     Future<void> Function(String message, BuildContext gameBallContext)?
         onRequestIntercepted,
     List<String> urlsToWatch = const [],
+    void Function(BuildContext gameBallContext)? onClosed,
   ]) {
     var widgetWebviewController = WebViewController();
     widgetWebviewController
@@ -435,9 +443,14 @@ class GameballApp extends StatelessWidget {
                     right: isLtr(language) ? 10.0 : null,
                     child: IconButton(
                       icon: const Icon(Icons.close, color: Color(0xFFCECECE)),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
+                      onPressed: onClosed != null
+                          ? () {
+                              Navigator.of(context).pop();
+                              onClosed?.call(context);
+                            }
+                          : () {
+                              Navigator.of(context).pop();
+                            },
                     ),
                   ),
               ],
@@ -481,7 +494,7 @@ class GameballApp extends StatelessWidget {
     if (_hideNavigation != null) {
       widgetUrl += '&hideNavigation=$_hideNavigation';
     }
-    
+
     return widgetUrl;
   }
 
