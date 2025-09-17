@@ -445,7 +445,6 @@ class GameballApp extends StatelessWidget {
                       icon: const Icon(Icons.close, color: Color(0xFFCECECE)),
                       onPressed: onClosed != null
                           ? () {
-                              Navigator.of(context).pop();
                               onClosed?.call(context);
                             }
                           : () {
